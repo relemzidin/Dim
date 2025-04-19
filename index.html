@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Floating Arrows</title>
+    <style>
+        /* --- Basic Setup & Dark Theme --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Prevent scrollbars from animation */
+            font-family: sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column; /* Stack scene and controls */
+            justify-content: center;
+            align-items: center;
+            background-color: #1a1a1a; /* Dark background */
+            color: #e0e0e0; /* Light text */
+        }
+
+        /* --- 3D Scene Setup --- */
+        .scene {
+            width: 1024px; /* Adjust size as needed */
+            height: 1024px;
+            perspective: 1000px; /* How deep the 3D effect looks */
+            perspective-origin: 50% 50%;
+            margin-bottom: 30px; /* Space between scene and controls */
+        }
+
+        .arrow-cluster {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            /* Center the cluster's origin point */
+            transform: translateZ(-50px); /* Move cluster back slightly if needed */
+            /* Animation applied to the whole cluster */
+            animation: floatRotate 30s linear infinite;
+        }
+
+        /* --- Arrow Styling --- */
+        .arrow {
+            position: absolute;
+            /* Position the arrow's base at the center of the cluster */
+            top: 50%;
+            left: 50%;
+            width: 4px; /* Shaft thickness */
+            height: 60px; /* Shaft length */
+            background-color: var(--arrow-color, #ff0000); /* Default/fallback color */
+            transform-origin: 50% 0; /* Rotate around the base (top-center) */
+            transform-style: preserve-3d; /* Ensure pseudo-elements inherit 3D */
+            /* Initial transform set by JS */
+        }
+
+        /* Arrowhead using ::after pseudo-element */
+        .arrow::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            /* Position arrowhead at the tip (bottom) of the shaft */
+            bottom: -12px; /* Adjust overlap/gap as needed */
+            left: 50%;
+            transform: translateX(-50%); /* Center the arrowhead */
+
+            /* Triangle shape */
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid var(--arrow-color, #ff0000); /* Pointing "down" relative to shaft */
+        }
+
+
+        /* --- Animation --- */
+        @keyframes floatRotate {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            }
+            100% {
+                /* Rotate smoothly on multiple axes */
+                transform: rotateX(360deg) rotateY(-360deg) rotateZ(180deg);
+            }
+        }
+
+        /* --- Controls Styling --- */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .controls label {
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .controls input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        #arrowCountSpan {
+            font-weight: bold;
+            min-width: 25px; /* Prevent layout shift */
+            text-align: center;
+            display: inline-block;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div class="arrow-cluster" id="arrowCluster">
+            <!-- Arrows will be generated here by JS -->
+        </div>
+    </div>
+
+    <div class="controls">
+        <label for="numArrowsSlider">
+            Number of Arrows: <span id="arrowCountSpan">30</span>
+        </label>
+        <input type="range" id="numArrowsSlider" min="1" max="150" value="30">
+    </div>
+
+    <script>
+        const arrowCluster = document.getElementById('arrowCluster');
+        const numArrowsSlider = document.getElementById('numArrowsSlider');
+        const arrowCountSpan = document.getElementById('arrowCountSpan');
+
+        function createArrow(index, total) {
+            const arrow = document.createElement('div');
+            arrow.classList.add('arrow');
+
+            // Generate a distinct color using HSL
+            // Hue varies based on index, saturation and lightness are kept vibrant
+            const hue = (index / total) * 360;
+            const color = `hsl(${hue}, 80%, 60%)`;
+            arrow.style.setProperty('--arrow-color', color); // Set CSS variable for color
+
+            // --- Calculate Initial 3D Orientation ---
+            // Distribute arrows somewhat evenly using random rotations
+            // More sophisticated distributions (like Fibonacci sphere) exist but are more complex.
+            const randomRotX = Math.random() * 360;
+            const randomRotY = Math.random() * 360;
+            const randomRotZ = Math.random() * 360;
+
+            // Apply initial transform to position and orient the arrow
+            // translate(-50%, 0) centers the arrow horizontally at its base (top)
+            // The rotations orient it in 3D space
+            arrow.style.transform = `
+                translate(-50%, 0)
+                rotateX(${randomRotX}deg)
+                rotateY(${randomRotY}deg)
+                rotateZ(${randomRotZ}deg)
+            `;
+
+            arrowCluster.appendChild(arrow);
+        }
+
+        function updateArrows(count) {
+            // Clear existing arrows
+            arrowCluster.innerHTML = '';
+
+            // Update count display
+            arrowCountSpan.textContent = count;
+
+            // Create new arrows
+            for (let i = 0; i < count; i++) {
+                createArrow(i, count);
+            }
+        }
+
+        // Event listener for the slider
+        numArrowsSlider.addEventListener('input', (event) => {
+            const count = parseInt(event.target.value, 10);
+            updateArrows(count);
+        });
+
+        // Initial setup on page load
+        updateArrows(parseInt(numArrowsSlider.value, 10));
+
+    </script>
+
+</body>
+</html>
